@@ -2,7 +2,7 @@
 Self-Driving Car Engineer Nanodegree Program
 
 ---
-[image1]: ./img/Kinetic_Model.png "Update equations"
+[image1]: ./img/Kinetic_Model.PNG "Update equations"
 
 ## implementation Rubric points
 
