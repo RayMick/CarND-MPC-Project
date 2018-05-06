@@ -25,6 +25,7 @@ Actuators are [a, delta]
 * a --> acceleration
 * delta --> steering angle
 
+
 Update equations:
 
 ![alt text][image1]
