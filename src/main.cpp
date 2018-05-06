@@ -65,6 +65,25 @@ Eigen::VectorXd polyfit(Eigen::VectorXd xvals, Eigen::VectorXd yvals,
   return result;
 }
 
+
+Eigen::MatrixXd Local2GlobalCoordinates(double x, double y, double psi, const vector<double> & ptsx, const vector<double> & ptsy) {
+  // transform waypoints from car's perspective (local coordinates) to map (global coordinates)
+  unsigned len = ptsx.size();
+  auto waypoints = Eigen::MatrixXd(2,len);
+
+  for (unsigned int i = 0; i < ptsx.size(); i++) {
+    double dx = ptsx[i] - x;
+    double dy = ptsy[i] - y;
+
+    waypoints(0,i) = dx * cos(-psi) - dy * sin(-psi);
+    waypoints(1,i) = dx * sin(-psi) + dy * cos(-psi);
+
+  }
+
+  return waypoints;
+}
+
+
 int main() {
   uWS::Hub h;
 
@@ -98,13 +117,33 @@ int main() {
           * Both are in between [-1, 1].
           *
           */
-          double steer_value;
-          double throttle_value;
+          Eigen::MatrixXd waypoints = Local2GlobalCoordinates(px, py, psi, ptsx, ptsy);
+          Eigen::VectorXd waypoints_x = waypoints.row(0);
+          Eigen::VectorXd waypoints_y = waypoints.row(1);
+
+          // Fit the reference waypoints with a 3rd order polynomial
+          auto coeffs = polyfit(waypoints_x, waypoints_y, 3);
+          double cte = polyeval(coeffs, 0);  // px = 0, py = 0
+          double epsi = -atan(coeffs[1]);  // p
+
+          double steer_value = j[1]["steering_angle"];
+          double throttle_value = j[1]["throttle"];
+
+          Eigen::VectorXd state(6);
+          state << 0, 0, 0, v, cte, epsi;
+          auto vars = mpc.Solve(state, coeffs);
+          steer_value = vars[0];
+          throttle_value = vars[1];
+
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
           // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
-          msgJson["steering_angle"] = steer_value;
+          // -------------------- !!!!! Need to negate the sterr_value before returninng to the simulator -----------------
+          // -------------------- !!!!! In car model equations, delta is positive we rotate counter-clockwise, or turn left.
+          // -------------------- !!!!! In the simulator however, a positive value implies a right turn and a negative value implies a left turn.
+          //msgJson["steering_angle"] = steer_value;
+          msgJson["steering_angle"] = -steer_value/(deg2rad(25));
           msgJson["throttle"] = throttle_value;
 
           //Display the MPC predicted trajectory 
@@ -113,6 +152,14 @@ int main() {
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Green line
+          for (unsigned int i = 2; i < vars.size(); i ++) {
+            if (i%2 == 0) {
+              mpc_x_vals.push_back(vars[i]);
+            }
+            else {
+              mpc_y_vals.push_back(vars[i]);
+            }
+          }
 
           msgJson["mpc_x"] = mpc_x_vals;
           msgJson["mpc_y"] = mpc_y_vals;
@@ -123,6 +170,10 @@ int main() {
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Yellow line
+          for (double i = 0; i < 100; i += 3){
+            next_x_vals.push_back(i);
+            next_y_vals.push_back(polyeval(coeffs, i));
+          }
 
           msgJson["next_x"] = next_x_vals;
           msgJson["next_y"] = next_y_vals;

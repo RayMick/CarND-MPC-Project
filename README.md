@@ -2,6 +2,62 @@
 Self-Driving Car Engineer Nanodegree Program
 
 ---
+[image1]: ./img/Kinetic_Model.png "Update equations"
+
+## implementation Rubric points
+
+The implementation is significantly inspired by the Udaicty MPC-to-line project, which can be found at:
+[MPC-Quiz](https://github.com/udacity/CarND-MPC-Quizzes)
+
+
+>* 1. Student describes their model in detail. This includes the state, actuators and update equations.
+
+The state is [x, y, ψ, v, cte, eψ].
+
+* x --> x coordinates
+* x --> y coordinates
+* ψ --> orientation angle
+* v --> velocity
+* cte --> Cross Track Error
+* eψ --> Orientation Error
+
+Actuators are [a, delta]
+* a --> acceleration
+* delta --> steering angle
+
+Update equations:
+
+![alt text][image1]
+
+
+>* 2. Student discusses the reasoning behind the chosen N (timestep length) and dt (elapsed duration between timesteps) values. Additionally the student details the previous values tried.
+
+ * Use 0.1s as the time step since it is a reasonable value after few tests. Also it matches with the delay of 100ms of the actuation.
+ * Choosing N = 10 makes N * dt = 1 sec, this is a balance between prediction accuracy and speed. Larger values of N means further in the future, which will make prediction less accurate and less meaningful since we will repeat/recalculate the state and optimal fit after every timestep.
+
+>* 3. A polynomial is fitted to waypoints. If the student preprocesses waypoints, the vehicle state, and/or actuators prior to the MPC procedure it is described.
+
+As fucntion is defined to preprocesses waypoints. This function transforms waypoints from car's perspective (local coordinates) to map (global coordinates). And it is in `main.cpp` from line 69--84
+```
+Eigen::MatrixXd Local2GlobalCoordinates
+(double x, double y, double psi, const vector<double> & ptsx, const vector<double> & ptsy)
+```
+
+>* 4. The student implements Model Predictive Control that handles a 100 millisecond latency. Student provides details on how they deal with latency.
+
+Inspired by Jeremy Shannon and Kaskmann, since there is 100ms latency and this latency matches to a single timestep interval (0.1sec). So I used actuation at time t-1 at time t to take into account this latency.
+This can be found in `MPC.cpp` from line 123-126.
+
+---
+
+## Simulation
+>* 5. The vehicle must successfully drive a lap around the track. No tire may leave the drivable portion of the track surface. The car may not pop up onto ledges or roll over any surfaces that would otherwise be considered unsafe (if humans were in the vehicle).
+
+The simulation video can be found at:
+
+[![term2-project5-MPC](https://img.youtube.com/vi/KrXuj_L1d7w/0.jpg)](https://youtu.be/KrXuj_L1d7w "term2-project5-MPC")
+
+---
 
 ## Dependencies
 
